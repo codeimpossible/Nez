@@ -81,7 +81,7 @@ namespace Nez.ImGuiTools
 			ImGui.Text("Current Folder: " + Path.GetFileName(RootFolder) + CurrentFolder.Replace(RootFolder, ""));
 			bool result = false;
 
-			if (ImGui.BeginChildFrame(1, new Num.Vector2(500, 400)))
+			if (ImGui.BeginChild(1, new Num.Vector2(500, 400), ImGuiChildFlags.FrameStyle))
 			{
 				var di = new DirectoryInfo(CurrentFolder);
 				if (di.Exists)
@@ -89,7 +89,7 @@ namespace Nez.ImGuiTools
 					if (di.Parent != null && (!DontAllowTraverselBeyondRootFolder || CurrentFolder != RootFolder))
 					{
 						ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-						if (ImGui.Selectable("../", false, ImGuiSelectableFlags.DontClosePopups))
+						if (ImGui.Selectable("../", false, ImGuiSelectableFlags.AllowOverlap))
 							CurrentFolder = di.Parent.FullName;
 						
 						ImGui.PopStyleColor();
@@ -102,7 +102,7 @@ namespace Nez.ImGuiTools
 						{
 							var name = Path.GetFileName(fse);
 							ImGui.PushStyleColor(ImGuiCol.Text, Color.Yellow.PackedValue);
-							if (ImGui.Selectable(name + "/", false, ImGuiSelectableFlags.DontClosePopups))
+							if (ImGui.Selectable(name + "/", false, ImGuiSelectableFlags.AllowOverlap))
 								CurrentFolder = fse;
 							ImGui.PopStyleColor();
 						}
@@ -110,7 +110,7 @@ namespace Nez.ImGuiTools
 						{
 							var name = Path.GetFileName(fse);
 							bool isSelected = SelectedFile == fse;
-							if (ImGui.Selectable(name, isSelected, ImGuiSelectableFlags.DontClosePopups))
+							if (ImGui.Selectable(name, isSelected, ImGuiSelectableFlags.AllowOverlap))
 								SelectedFile = fse;
 
 							if (ImGui.IsMouseDoubleClicked(0))
@@ -122,7 +122,7 @@ namespace Nez.ImGuiTools
 					}
 				}
 			}
-			ImGui.EndChildFrame();
+			ImGui.EndChild();
 
 
 			if (ImGui.Button("Cancel"))

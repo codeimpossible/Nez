@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-
 namespace Nez.ImGuiTools
 {
 	/// <summary>
@@ -24,11 +23,11 @@ namespace Nez.ImGuiTools
 		readonly int _vertexDeclarationSize;
 
 		byte[] _vertexData;
-		VertexBuffer _vertexBuffer;
+		DynamicVertexBuffer _vertexBuffer;
 		int _vertexBufferSize;
 
 		byte[] _indexData;
-		IndexBuffer _indexBuffer;
+		DynamicIndexBuffer _indexBuffer;
 		int _indexBufferSize;
 
 		// Textures
@@ -39,9 +38,27 @@ namespace Nez.ImGuiTools
 
 		// Input
 		int _scrollWheelValue;
+		private const float WHEEL_DELTA = 120;
 
+		private readonly Keys[] _allKeys = Enum.GetValues<Keys>();
 
-		List<int> _keys = new List<int>();
+		private static readonly int SdlVersion = 2;
+
+		static ImGuiRenderer()
+		{
+#if FNA
+			try
+			{
+				_ = SDL3.SDL.SDL_GetClipboardText();
+				SdlVersion = 3;
+			}
+			catch
+			{
+				SdlVersion = 2;
+			}
+#endif
+		}
+
 
 
 		public ImGuiRenderer(Game game)
@@ -167,9 +184,19 @@ namespace Nez.ImGuiTools
 		delegate string GetClipboardTextDelegate();
 		delegate void SetClipboardTextDelegate(IntPtr userData, string txt);
 
-		static void SetClipboardText(IntPtr userData, string txt) => SDL2.SDL.SDL_SetClipboardText(txt);
+		static void SetClipboardText(IntPtr userData, string txt)
+		{
+			object _ = SdlVersion == 3 ?
+				(object)SDL3.SDL.SDL_SetClipboardText(txt) :
+				(object)SDL2.SDL.SDL_SetClipboardText(txt);
+		}
 
-		static string GetClipboardText() => SDL2.SDL.SDL_GetClipboardText();
+		static string GetClipboardText()
+		{
+			return SdlVersion == 3 ?
+				SDL3.SDL.SDL_GetClipboardText() :
+				SDL2.SDL.SDL_GetClipboardText();
+		}
 #endif
 
 		/// <summary>
@@ -182,30 +209,8 @@ namespace Nez.ImGuiTools
 #if FNA
 			// forward clipboard methods to SDL
 			io.SetClipboardTextFn = Marshal.GetFunctionPointerForDelegate<SetClipboardTextDelegate>(SetClipboardText);
-			io.GetClipboardTextFn = Marshal.GetFunctionPointerForDelegate<GetClipboardTextDelegate>(SDL2.SDL.SDL_GetClipboardText);
+			io.GetClipboardTextFn = Marshal.GetFunctionPointerForDelegate<GetClipboardTextDelegate>(GetClipboardText);
 #endif
-
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Tab] = (int)Keys.Tab);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.LeftArrow] = (int)Keys.Left);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.RightArrow] = (int)Keys.Right);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.UpArrow] = (int)Keys.Up);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.DownArrow] = (int)Keys.Down);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.PageUp] = (int)Keys.PageUp);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.PageDown] = (int)Keys.PageDown);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Home] = (int)Keys.Home);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.End] = (int)Keys.End);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Delete] = (int)Keys.Delete);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Backspace] = (int)Keys.Back);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Enter] = (int)Keys.Enter);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Escape] = (int)Keys.Escape);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.LeftCtrl] = (int)Keys.LeftControl);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.A] = (int)Keys.A);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.C] = (int)Keys.C);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.V] = (int)Keys.V);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.X] = (int)Keys.X);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Y] = (int)Keys.Y);
-			_keys.Add(io.KeyMap[(int)ImGuiKey.Z] = (int)Keys.Z);
-
 
 #if !FNA
 			Core.Instance.Window.TextInput += (s, a) =>
@@ -254,30 +259,98 @@ namespace Nez.ImGuiTools
 			var mouse = Input.CurrentMouseState;
 			var keyboard = Input.CurrentKeyboardState;
 
-			for (int i = 0; i < _keys.Count; i++)
-			{
-				io.KeysDown[_keys[i]] = keyboard.IsKeyDown((Keys)_keys[i]);
-			}
+			io.AddMousePosEvent(mouse.X, mouse.Y);
+			io.AddMouseButtonEvent(0, mouse.LeftButton == ButtonState.Pressed);
+			io.AddMouseButtonEvent(1, mouse.RightButton == ButtonState.Pressed);
+			io.AddMouseButtonEvent(2, mouse.MiddleButton == ButtonState.Pressed);
+			io.AddMouseButtonEvent(3, mouse.XButton1 == ButtonState.Pressed);
+			io.AddMouseButtonEvent(4, mouse.XButton2 == ButtonState.Pressed);
 
-			io.KeyShift = keyboard.IsKeyDown(Keys.LeftShift) || keyboard.IsKeyDown(Keys.RightShift);
-			io.KeyCtrl = keyboard.IsKeyDown(Keys.LeftControl) || keyboard.IsKeyDown(Keys.RightControl);
-			io.KeyAlt = keyboard.IsKeyDown(Keys.LeftAlt) || keyboard.IsKeyDown(Keys.RightAlt);
-			io.KeySuper = keyboard.IsKeyDown(Keys.LeftWindows) || keyboard.IsKeyDown(Keys.RightWindows);
+			io.AddMouseWheelEvent(
+				0, // (mouse.HorizontalScrollWheelValue - _horizontalScrollWheelValue) / WHEEL_DELTA,
+				(mouse.ScrollWheelValue - _scrollWheelValue) / WHEEL_DELTA);
+
+			_scrollWheelValue = mouse.ScrollWheelValue;
+
+			foreach (var key in _allKeys) {
+				if (TryMapKeys(key, out ImGuiKey imguikey)) {
+					io.AddKeyEvent(imguikey, keyboard.IsKeyDown(key));
+				}
+			}
 
 			io.DisplaySize = new System.Numerics.Vector2(Core.GraphicsDevice.PresentationParameters.BackBufferWidth,
 				Core.GraphicsDevice.PresentationParameters.BackBufferHeight);
 			io.DisplayFramebufferScale = new System.Numerics.Vector2(1f, 1f);
 
-			io.MousePos = new System.Numerics.Vector2(mouse.X, mouse.Y);
-
-			io.MouseDown[0] = mouse.LeftButton == ButtonState.Pressed;
-			io.MouseDown[1] = mouse.RightButton == ButtonState.Pressed;
-			io.MouseDown[2] = mouse.MiddleButton == ButtonState.Pressed;
-
-			var scrollDelta = mouse.ScrollWheelValue - _scrollWheelValue;
-			io.MouseWheel = scrollDelta > 0 ? 1 : scrollDelta < 0 ? -1 : 0;
-			_scrollWheelValue = mouse.ScrollWheelValue;
+#if FNA
+			if (ImGui.GetIO().WantTextInput && !TextInputEXT.IsTextInputActive())
+				TextInputEXT.StartTextInput();
+			else if (!ImGui.GetIO().WantTextInput && TextInputEXT.IsTextInputActive())
+				TextInputEXT.StopTextInput();
+#endif
 		}
+
+		private bool TryMapKeys(Keys key, out ImGuiKey imguikey) {
+	        //Special case not handed in the switch...
+	        //If the actual key we put in is "None", return none and true.
+	        //otherwise, return none and false.
+	        if (key == Keys.None) {
+	            imguikey = ImGuiKey.None;
+	            return true;
+	        }
+
+	        imguikey = key switch {
+	            Keys.Back => ImGuiKey.Backspace,
+	            Keys.Tab => ImGuiKey.Tab,
+	            Keys.Enter => ImGuiKey.Enter,
+	            Keys.CapsLock => ImGuiKey.CapsLock,
+	            Keys.Escape => ImGuiKey.Escape,
+	            Keys.Space => ImGuiKey.Space,
+	            Keys.PageUp => ImGuiKey.PageUp,
+	            Keys.PageDown => ImGuiKey.PageDown,
+	            Keys.End => ImGuiKey.End,
+	            Keys.Home => ImGuiKey.Home,
+	            Keys.Left => ImGuiKey.LeftArrow,
+	            Keys.Right => ImGuiKey.RightArrow,
+	            Keys.Up => ImGuiKey.UpArrow,
+	            Keys.Down => ImGuiKey.DownArrow,
+	            Keys.LeftWindows => ImGuiKey.LeftSuper,
+	            Keys.RightWindows => ImGuiKey.RightSuper,
+	            Keys.PrintScreen => ImGuiKey.PrintScreen,
+	            Keys.Insert => ImGuiKey.Insert,
+	            Keys.Delete => ImGuiKey.Delete,
+	            >= Keys.D0 and <= Keys.D9 => ImGuiKey._0 + (key - Keys.D0),
+	            >= Keys.A and <= Keys.Z => ImGuiKey.A + (key - Keys.A),
+	            >= Keys.NumPad0 and <= Keys.NumPad9 => ImGuiKey.Keypad0 + (key - Keys.NumPad0),
+	            Keys.Multiply => ImGuiKey.KeypadMultiply,
+	            Keys.Add => ImGuiKey.KeypadAdd,
+	            Keys.Subtract => ImGuiKey.KeypadSubtract,
+	            Keys.Decimal => ImGuiKey.KeypadDecimal,
+	            Keys.Divide => ImGuiKey.KeypadDivide,
+	            >= Keys.F1 and <= Keys.F24 => ImGuiKey.F1 + (key - Keys.F1),
+	            Keys.NumLock => ImGuiKey.NumLock,
+	            Keys.Scroll => ImGuiKey.ScrollLock,
+	            Keys.LeftShift => ImGuiKey.ModShift,
+	            Keys.LeftControl => ImGuiKey.ModCtrl,
+	            Keys.LeftAlt => ImGuiKey.ModAlt,
+	            Keys.OemSemicolon => ImGuiKey.Semicolon,
+	            Keys.OemPlus => ImGuiKey.Equal,
+	            Keys.OemComma => ImGuiKey.Comma,
+	            Keys.OemMinus => ImGuiKey.Minus,
+	            Keys.OemPeriod => ImGuiKey.Period,
+	            Keys.OemQuestion => ImGuiKey.Slash,
+	            Keys.OemTilde => ImGuiKey.GraveAccent,
+	            Keys.OemOpenBrackets => ImGuiKey.LeftBracket,
+	            Keys.OemCloseBrackets => ImGuiKey.RightBracket,
+	            Keys.OemPipe => ImGuiKey.Backslash,
+	            Keys.OemQuotes => ImGuiKey.Apostrophe,
+	            Keys.BrowserBack => ImGuiKey.AppBack,
+	            Keys.BrowserForward => ImGuiKey.AppForward,
+	            _ => ImGuiKey.None,
+	        };
+
+	        return imguikey != ImGuiKey.None;
+	    }
 
 		#endregion
 
@@ -314,110 +387,114 @@ namespace Nez.ImGuiTools
 			Core.GraphicsDevice.ScissorRectangle = lastScissorBox;
 		}
 
-		unsafe void UpdateBuffers(ImDrawDataPtr drawData)
-		{
-			if (drawData.TotalVtxCount == 0)
-			{
-				return;
-			}
+		private unsafe void UpdateBuffers(ImDrawDataPtr drawData) {
+	        if (drawData.TotalVtxCount == 0) {
+	            return;
+	        }
 
-			// Expand buffers if we need more room
-			if (drawData.TotalVtxCount > _vertexBufferSize)
-			{
-				_vertexBuffer?.Dispose();
+	        // Expand buffers if we need more room
+	        if (drawData.TotalVtxCount > _vertexBufferSize) {
+	            _vertexBuffer?.Dispose();
 
-				_vertexBufferSize = (int)(drawData.TotalVtxCount * 1.5f);
-				_vertexBuffer = new VertexBuffer(Core.GraphicsDevice, _vertexDeclaration, _vertexBufferSize,
-					BufferUsage.None);
-				_vertexData = new byte[_vertexBufferSize * _vertexDeclarationSize];
-			}
+	            _vertexBufferSize = (int)(drawData.TotalVtxCount * 1.5f);
+	            _vertexBuffer = new DynamicVertexBuffer(Core.GraphicsDevice, _vertexDeclaration, _vertexBufferSize, BufferUsage.None);
+	            _vertexData = new byte[_vertexBufferSize * _vertexDeclarationSize];
+	        }
 
-			if (drawData.TotalIdxCount > _indexBufferSize)
-			{
-				_indexBuffer?.Dispose();
+	        if (_vertexBuffer is null || _vertexData is null) {
+	            throw new InvalidOperationException("Invalid buffer for guid.");
+	        }
 
-				_indexBufferSize = (int)(drawData.TotalIdxCount * 1.5f);
-				_indexBuffer = new IndexBuffer(Core.GraphicsDevice, IndexElementSize.SixteenBits, _indexBufferSize,
-					BufferUsage.None);
-				_indexData = new byte[_indexBufferSize * sizeof(ushort)];
-			}
+	        if (drawData.TotalIdxCount > _indexBufferSize) {
+	            _indexBuffer?.Dispose();
 
-			// Copy ImGui's vertices and indices to a set of managed byte arrays
-			int vtxOffset = 0;
-			int idxOffset = 0;
+	            _indexBufferSize = (int)(drawData.TotalIdxCount * 1.5f);
+	            _indexBuffer = new DynamicIndexBuffer(Core.GraphicsDevice, IndexElementSize.SixteenBits, _indexBufferSize, BufferUsage.None);
+	            _indexData = new byte[_indexBufferSize * sizeof(ushort)];
+	        }
 
-			for (var n = 0; n < drawData.CmdListsCount; n++)
-			{
-				var cmdList = drawData.CmdListsRange[n];
+	        if (_indexBuffer is null || _indexData is null) {
+	            throw new InvalidOperationException("Invalid buffer for guid.");
+	        }
 
-				fixed (void* vtxDstPtr = &_vertexData[vtxOffset * _vertexDeclarationSize])
-				fixed (void* idxDstPtr = &_indexData[idxOffset * sizeof(ushort)])
-				{
-					Buffer.MemoryCopy((void*)cmdList.VtxBuffer.Data, vtxDstPtr, _vertexData.Length,
-						cmdList.VtxBuffer.Size * _vertexDeclarationSize);
-					Buffer.MemoryCopy((void*)cmdList.IdxBuffer.Data, idxDstPtr, _indexData.Length,
-						cmdList.IdxBuffer.Size * sizeof(ushort));
-				}
+	        // Copy ImGui's vertices and indices to a set of managed byte arrays
+	        int vtxOffset = 0;
+	        int idxOffset = 0;
 
-				vtxOffset += cmdList.VtxBuffer.Size;
-				idxOffset += cmdList.IdxBuffer.Size;
-			}
+	        for (int n = 0; n < drawData.CmdListsCount; n++) {
+	            ImDrawListPtr cmdList = drawData.CmdLists[n];
 
-			// Copy the managed byte arrays to the gpu vertex- and index buffers
-			_vertexBuffer.SetData(_vertexData, 0, drawData.TotalVtxCount * _vertexDeclarationSize);
-			_indexBuffer.SetData(_indexData, 0, drawData.TotalIdxCount * sizeof(ushort));
-		}
+	            fixed (void* vtxDstPtr = &_vertexData[vtxOffset * _vertexDeclarationSize])
+	            fixed (void* idxDstPtr = &_indexData[idxOffset * sizeof(ushort)]) {
+	                Buffer.MemoryCopy((void*)cmdList.VtxBuffer.Data, vtxDstPtr, _vertexData.Length, cmdList.VtxBuffer.Size * _vertexDeclarationSize);
+	                Buffer.MemoryCopy((void*)cmdList.IdxBuffer.Data, idxDstPtr, _indexData.Length, cmdList.IdxBuffer.Size * sizeof(ushort));
+	            }
 
-		unsafe void RenderCommandLists(ImDrawDataPtr drawData)
-		{
+	            vtxOffset += cmdList.VtxBuffer.Size;
+	            idxOffset += cmdList.IdxBuffer.Size;
+	        }
+
+	        // Copy the managed byte arrays to the gpu vertex- and index buffers
+	        _vertexBuffer.SetData(_vertexData, 0, drawData.TotalVtxCount * _vertexDeclarationSize, SetDataOptions.Discard);
+	        _indexBuffer.SetData(_indexData, 0, drawData.TotalIdxCount * sizeof(ushort), SetDataOptions.Discard);
+	    }
+
+		private unsafe void RenderCommandLists(ImDrawDataPtr drawData) {
 			Core.GraphicsDevice.SetVertexBuffer(_vertexBuffer);
 			Core.GraphicsDevice.Indices = _indexBuffer;
 
-			int vtxOffset = 0;
-			int idxOffset = 0;
+	        int vtxOffset = 0;
+	        int idxOffset = 0;
 
-			for (int n = 0; n < drawData.CmdListsCount; n++)
-			{
-				var cmdList = drawData.CmdListsRange[n];
-				for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++)
-				{
-					var drawCmd = cmdList.CmdBuffer[cmdi];
-					if (!_loadedTextures.ContainsKey(drawCmd.TextureId))
-					{
-						throw new InvalidOperationException(
-							$"Could not find a texture with id '{drawCmd.TextureId}', please check your bindings");
-					}
+	        for (int n = 0; n < drawData.CmdListsCount; n++) {
+	            ImDrawListPtr cmdList = drawData.CmdLists[n];
 
-					Core.GraphicsDevice.ScissorRectangle = new Rectangle(
-						(int)drawCmd.ClipRect.X,
-						(int)drawCmd.ClipRect.Y,
-						(int)(drawCmd.ClipRect.Z - drawCmd.ClipRect.X),
-						(int)(drawCmd.ClipRect.W - drawCmd.ClipRect.Y)
-					);
+	            for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++) {
+	                ImDrawCmdPtr drawCmd = cmdList.CmdBuffer[cmdi];
 
-					var effect = UpdateEffect(_loadedTextures[drawCmd.TextureId]);
-					foreach (var pass in effect.CurrentTechnique.Passes)
-					{
-						pass.Apply();
+	                if (!_loadedTextures.ContainsKey(drawCmd.TextureId)) {
+	                    // throw new InvalidOperationException($"Could not find a texture with id '{drawCmd.TextureId}', please check your bindings");
+	                    // TODO: This is a temporary fix for the above exception, but it should be handled properly
+	                    // Why are disposed textures arriving here?
+	                    break;
+	                }
 
-#pragma warning disable CS0618 // FNA does not expose an alternative method.
-						Core.GraphicsDevice.DrawIndexedPrimitives(
-							primitiveType: PrimitiveType.TriangleList,
-							baseVertex: vtxOffset,
-							minVertexIndex: 0,
-							numVertices: cmdList.VtxBuffer.Size,
-							startIndex: idxOffset,
-							primitiveCount: (int)drawCmd.ElemCount / 3
-						);
-#pragma warning restore CS0618
-					}
+	                // I don't really understand this? Why do we have an element count of zero?
+	                // Since this crashes MonoGame, we will just skip it.
+	                if (drawCmd.ElemCount == 0) {
+	                    continue;
+	                }
 
-					idxOffset += (int)drawCmd.ElemCount;
-				}
+	                Core.GraphicsDevice.ScissorRectangle = new Rectangle(
+	                    (int)drawCmd.ClipRect.X,
+	                    (int)drawCmd.ClipRect.Y,
+	                    (int)(drawCmd.ClipRect.Z - drawCmd.ClipRect.X),
+	                    (int)(drawCmd.ClipRect.W - drawCmd.ClipRect.Y)
+	                );
 
-				vtxOffset += cmdList.VtxBuffer.Size;
-			}
-		}
+	                var effect = UpdateEffect(_loadedTextures[drawCmd.TextureId]);
+
+	                foreach (var pass in effect.CurrentTechnique.Passes) {
+	                    pass.Apply();
+
+	#pragma warning disable CS0618 // // FNA does not expose an alternative method.
+	                    Core.GraphicsDevice.DrawIndexedPrimitives(
+	                        primitiveType: PrimitiveType.TriangleList,
+	                        baseVertex: vtxOffset,
+	                        minVertexIndex: 0,
+	                        numVertices: cmdList.VtxBuffer.Size,
+	                        startIndex: idxOffset,
+	                        primitiveCount: (int)drawCmd.ElemCount / 3
+	                    );
+	#pragma warning restore CS0618
+	                }
+
+	                idxOffset += (int)drawCmd.ElemCount;
+	            }
+
+	            vtxOffset += cmdList.VtxBuffer.Size;
+	        }
+	    }
 
 		#endregion
 	}

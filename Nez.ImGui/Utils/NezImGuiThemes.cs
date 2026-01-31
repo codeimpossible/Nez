@@ -174,9 +174,9 @@ namespace Nez.ImGuiTools
 			colors[(int) ImGuiCol.ResizeGripActive] = new Num.Vector4(0.87f, 0.87f, 0.87f, 0.74f);
 			colors[(int) ImGuiCol.Tab] = new Num.Vector4(0.01f, 0.01f, 0.01f, 0.86f);
 			colors[(int) ImGuiCol.TabHovered] = new Num.Vector4(0.29f, 0.29f, 0.29f, 1.00f);
-			colors[(int) ImGuiCol.TabActive] = new Num.Vector4(0.31f, 0.31f, 0.31f, 1.00f);
-			colors[(int) ImGuiCol.TabUnfocused] = new Num.Vector4(0.02f, 0.02f, 0.02f, 1.00f);
-			colors[(int) ImGuiCol.TabUnfocusedActive] = new Num.Vector4(0.19f, 0.19f, 0.19f, 1.00f);
+			colors[(int) ImGuiCol.TabSelected] = new Num.Vector4(0.31f, 0.31f, 0.31f, 1.00f);
+			colors[(int) ImGuiCol.TabDimmed] = new Num.Vector4(0.02f, 0.02f, 0.02f, 1.00f);
+			colors[(int) ImGuiCol.TabDimmedSelected] = new Num.Vector4(0.19f, 0.19f, 0.19f, 1.00f);
 			colors[(int) ImGuiCol.PlotLines] = new Num.Vector4(0.61f, 0.61f, 0.61f, 1.00f);
 			colors[(int) ImGuiCol.PlotLinesHovered] = new Num.Vector4(0.68f, 0.68f, 0.68f, 1.00f);
 			colors[(int) ImGuiCol.PlotHistogram] = new Num.Vector4(0.90f, 0.77f, 0.33f, 1.00f);
@@ -229,9 +229,9 @@ namespace Nez.ImGuiTools
 			colors[(int) ImGuiCol.ResizeGripActive] = new Num.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
 			colors[(int) ImGuiCol.Tab] = new Num.Vector4(0.098f, 0.098f, 0.098f, 1.000f);
 			colors[(int) ImGuiCol.TabHovered] = new Num.Vector4(0.352f, 0.352f, 0.352f, 1.000f);
-			colors[(int) ImGuiCol.TabActive] = new Num.Vector4(0.195f, 0.195f, 0.195f, 1.000f);
-			colors[(int) ImGuiCol.TabUnfocused] = new Num.Vector4(0.098f, 0.098f, 0.098f, 1.000f);
-			colors[(int) ImGuiCol.TabUnfocusedActive] = new Num.Vector4(0.195f, 0.195f, 0.195f, 1.000f);
+			colors[(int) ImGuiCol.TabSelected] = new Num.Vector4(0.195f, 0.195f, 0.195f, 1.000f);
+			colors[(int) ImGuiCol.TabDimmed] = new Num.Vector4(0.098f, 0.098f, 0.098f, 1.000f);
+			colors[(int) ImGuiCol.TabDimmedSelected] = new Num.Vector4(0.195f, 0.195f, 0.195f, 1.000f);
 			colors[(int) ImGuiCol.PlotLines] = new Num.Vector4(0.469f, 0.469f, 0.469f, 1.000f);
 			colors[(int) ImGuiCol.PlotLinesHovered] = new Num.Vector4(1.000f, 0.391f, 0.000f, 1.000f);
 			colors[(int) ImGuiCol.PlotHistogram] = new Num.Vector4(0.586f, 0.586f, 0.586f, 1.000f);

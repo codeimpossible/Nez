@@ -84,7 +84,7 @@ namespace Nez.ImGuiTools
 
 				if (_hasSlicedContent)
 				{
-					ImGui.BeginChild("Slice Origins", new Num.Vector2(250, 0), true);
+					ImGui.BeginChild("Slice Origins", new Num.Vector2(250, 0), ImGuiChildFlags.Border);
 					DrawLeftPane();
 					ImGui.EndChild();
 
@@ -96,7 +96,7 @@ namespace Nez.ImGuiTools
 				if (!_hasSlicedContent)
 					rightPanePaddedSize = 0;
 
-				ImGui.BeginChild("item view", new Num.Vector2(ImGui.GetContentRegionAvail().X - rightPanePaddedSize, 0), false, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+				ImGui.BeginChild("item view", new Num.Vector2(ImGui.GetContentRegionAvail().X - rightPanePaddedSize, 0), ImGuiChildFlags.None, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
 				if (_textureLoadedThisFrame)
 				{
 					FrameImage();
@@ -109,7 +109,7 @@ namespace Nez.ImGuiTools
 
 				if (_hasSlicedContent)
 				{
-					ImGui.BeginChild("Right Pane", new Num.Vector2(300, 0), true);
+					ImGui.BeginChild("Right Pane", new Num.Vector2(300, 0), ImGuiChildFlags.Border);
 					DrawRightPane();
 					ImGui.EndChild();
 				}
@@ -610,7 +610,9 @@ namespace Nez.ImGuiTools
 
 		Num.Vector2 CalcFitToScreen()
 		{
-			var availSize = ImGui.GetContentRegionMax();
+			// jared: 2026.01.31 - update to new method of determining the right edge in local coordinates
+			// see: https://github.com/ocornut/imgui/issues/7838
+			var availSize = ImGui.GetContentRegionAvail() + ImGui.GetCursorScreenPos() - ImGui.GetWindowPos();
 			var autoScale = _textureSize / availSize;
 			if (autoScale.X > autoScale.Y)
 				return new Num.Vector2(availSize.X, availSize.X / _textureAspectRatio);

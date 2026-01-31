@@ -70,7 +70,7 @@ namespace Nez.ImGuiTools.TypeInspectors
 					ImGui.CloseCurrentPopup();
 				}
 
-				if (ImGui.Selectable("Set Effect", false, ImGuiSelectableFlags.DontClosePopups))
+				if (ImGui.Selectable("Set Effect", false, ImGuiSelectableFlags.AllowOverlap))
 					ImGui.OpenPopup("effect-chooser");
 
 				ImGui.EndPopup();
