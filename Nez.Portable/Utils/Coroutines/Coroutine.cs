@@ -10,6 +10,8 @@
 		/// </summary>
 		void Stop();
 
+		bool IsDone { get; }
+
 		/// <summary>
 		/// sets whether the Coroutine should use deltaTime or unscaledDeltaTime for timing
 		/// </summary>

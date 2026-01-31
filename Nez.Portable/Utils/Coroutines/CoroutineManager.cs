@@ -25,7 +25,7 @@ namespace Nez.Systems
 			/// </summary>
 			public float WaitTimer;
 
-			public bool IsDone;
+			public bool IsDone { get; internal set; }
 			public CoroutineImpl WaitForCoroutine;
 			public bool UseUnscaledDeltaTime = false;
 
