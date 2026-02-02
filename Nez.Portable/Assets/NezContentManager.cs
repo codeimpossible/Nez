@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework.Content;
 using System.Threading.Tasks;
 using System.IO;
+using AsepriteDotNet.Aseprite;
+using AsepriteDotNet.IO;
 using Microsoft.Xna.Framework;
 using Nez.ParticleDesigner;
 using Nez.Sprites;
@@ -13,7 +15,6 @@ using Nez.Textures;
 using Nez.Tiled;
 using Microsoft.Xna.Framework.Audio;
 using Nez.BitmapFonts;
-using Nez.Aseprite;
 
 
 namespace Nez.Systems
@@ -217,7 +218,8 @@ namespace Nez.Systems
 					return aseFile;
 			}
 
-			var asepriteFile = AsepriteFileLoader.Load(name);
+			using var stream = TitleContainer.OpenStream(name);
+			var asepriteFile = AsepriteFileLoader.FromStream(name, stream);
 			LoadedAssets.Add(name, asepriteFile);
 			return asepriteFile;
 		}
