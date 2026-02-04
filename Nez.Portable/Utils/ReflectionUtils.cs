@@ -102,6 +102,32 @@ namespace Nez
 
 		#endregion
 
+		public static List<MethodInfo> GetStaticMethodsWithAttribute<T>() where T : Attribute
+		{
+			var actionList = new List<MethodInfo>();
+			foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+			{
+				foreach (var type in assembly.GetTypes())
+				{
+					if (!type.IsClass && !type.IsAbstract) continue;
+					foreach (var method in type.GetMethods())
+					{
+						if (!method.IsStatic) continue;
+						var attr = method.GetCustomAttribute<T>();
+						if (attr is null) continue;
+						if (method.GetParameters().Length > 0)
+						{
+							// output a warning about parameter count
+							continue;
+						}
+						actionList.Add(method);
+					}
+				}
+			}
+
+			return actionList;
+		}
+
 		public static T CreateDelegate<T>(object targetObject, MethodInfo methodInfo) =>
 			(T)(object)Delegate.CreateDelegate(typeof(T), targetObject, methodInfo);
 

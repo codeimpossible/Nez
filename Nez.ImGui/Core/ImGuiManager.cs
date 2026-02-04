@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -24,6 +26,7 @@ namespace Nez.ImGuiTools
 		public bool DisableMouseWheelWhenGameWindowUnfocused = true;
 
 		List<Type> _sceneSubclasses = new List<Type>();
+		private List<MethodInfo> _mainMenuActions = new();
 		System.Reflection.MethodInfo[] _themes;
 
 		CoreWindow _coreWindow = new CoreWindow();
@@ -62,6 +65,7 @@ namespace Nez.ImGuiTools
 
 			// find all Scenes
 			_sceneSubclasses = ReflectionUtils.GetAllSubclasses(typeof(Scene), true);
+			_mainMenuActions = ReflectionUtils.GetStaticMethodsWithAttribute<MainMenuActionAttribute>();
 
 			// tone down indent
 			ImGui.GetStyle().IndentSpacing = 12;
@@ -139,6 +143,10 @@ namespace Nez.ImGuiTools
 					ImGui.EndMenu();
 				}
 
+				var tree = MainMenuTree.BuildTree(_mainMenuActions);
+				TraverseMenuTree(tree, skip: true);
+
+
 				if (_themes.Length > 0 && ImGui.BeginMenu("Themes"))
 				{
 					foreach (var theme in _themes)
@@ -207,6 +215,37 @@ namespace Nez.ImGuiTools
 				}
 
 				ImGui.EndMainMenuBar();
+			}
+		}
+
+		private static void TraverseMenuTree(MainMenuNode node, bool skip = false)
+		{
+			if (!skip)
+			{
+				ImGui.BeginMenu(node.Name);
+			}
+
+			var sortedChildren = new List<MainMenuNode>(node.Children.Values);
+			sortedChildren.Sort((a, b) =>
+				string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+			foreach (var child in sortedChildren)
+			{
+				if (!child.HasChildren)
+				{
+					if (ImGui.MenuItem(child.Name))
+					{
+						child.Method?.Invoke(null, []);
+					}
+				}
+				else
+				{
+					TraverseMenuTree(child);
+				}
+			}
+
+			if (!skip)
+			{
+				ImGui.EndMenu();
 			}
 		}
 
