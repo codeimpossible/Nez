@@ -28,7 +28,7 @@ namespace Nez.Systems
 
 		List<IDisposable> _disposableAssets;
 
-		List<IDisposable> DisposableAssets
+		public List<IDisposable> DisposableAssets
 		{
 			get
 			{
@@ -44,7 +44,7 @@ namespace Nez.Systems
 
 #if FNA
 		Dictionary<string, object> _loadedAssets;
-		Dictionary<string, object> LoadedAssets
+		public Dictionary<string, object> LoadedAssets
 		{
 			get
 			{
