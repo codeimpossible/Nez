@@ -77,6 +77,7 @@ namespace Nez.Systems
 		/// </summary>
 		public Texture2D LoadTexture(string name, bool premultiplyAlpha = false)
 		{
+			name = NormalizePathString(name);
 			// no file extension. Assumed to be an xnb so let ContentManager load it
 			if (string.IsNullOrEmpty(Path.GetExtension(name)))
 				return Load<Texture2D>(name);
@@ -105,6 +106,7 @@ namespace Nez.Systems
 		/// </summary>
 		public SoundEffect LoadSoundEffect(string name)
 		{
+			name = NormalizePathString(name);
 			// no file extension. Assumed to be an xnb so let ContentManager load it
 			if (string.IsNullOrEmpty(Path.GetExtension(name)))
 				return Load<SoundEffect>(name);
@@ -131,6 +133,7 @@ namespace Nez.Systems
 		/// </summary>
 		public TmxMap LoadTiledMap(string name)
 		{
+			name = NormalizePathString(name);
 			if (LoadedAssets.TryGetValue(name, out var asset))
 			{
 				if (asset is TmxMap map)
@@ -150,6 +153,7 @@ namespace Nez.Systems
 		/// </summary>
 		public Particles.ParticleEmitterConfig LoadParticleEmitterConfig(string name)
 		{
+			name = NormalizePathString(name);
 			if (LoadedAssets.TryGetValue(name, out var asset))
 			{
 				if (asset is Particles.ParticleEmitterConfig config)
@@ -169,6 +173,7 @@ namespace Nez.Systems
 		/// </summary>
 		public SpriteAtlas LoadSpriteAtlas(string name, bool premultiplyAlpha = false)
 		{
+			name = NormalizePathString(name);
 			if (LoadedAssets.TryGetValue(name, out var asset))
 			{
 				if (asset is SpriteAtlas spriteAtlas)
@@ -188,6 +193,7 @@ namespace Nez.Systems
 		/// </summary>
 		public BitmapFont LoadBitmapFont(string name, bool premultiplyAlpha = false)
 		{
+			name = NormalizePathString(name);
 			if (LoadedAssets.TryGetValue(name, out var asset))
 			{
 				if (asset is BitmapFont bmFont)
@@ -212,6 +218,7 @@ namespace Nez.Systems
 		/// </returns>
 		public AsepriteFile LoadAsepriteFile(string name)
 		{
+			name = NormalizePathString(name);
 			if (LoadedAssets.TryGetValue(name, out var asset))
 			{
 				if (asset is AsepriteFile aseFile)
@@ -231,6 +238,7 @@ namespace Nez.Systems
 		/// <param name="name">The json filename.</param>
 		public string LoadJson(string name)
 		{
+			name = NormalizePathString(name);
 			if (LoadedAssets.TryGetValue(name, out var asset))
 			{
 				if (asset is string json)
@@ -335,6 +343,7 @@ namespace Nez.Systems
 			var syncContext = SynchronizationContext.Current;
 			Task.Run(() =>
 			{
+				assetName = NormalizePathString(assetName);
 				var asset = Load<T>(assetName);
 
 				// if we have a callback do it on the main thread
@@ -358,6 +367,7 @@ namespace Nez.Systems
 			var syncContext = SynchronizationContext.Current;
 			Task.Run(() =>
 			{
+				assetName = NormalizePathString(assetName);
 				var asset = Load<T>(assetName);
 
 				if (onLoaded != null)
@@ -379,7 +389,12 @@ namespace Nez.Systems
 			Task.Run(() =>
 			{
 				for (var i = 0; i < assetNames.Length; i++)
-					Load<T>(assetNames[i]);
+				{
+					var assetName = assetNames[i];
+					assetName = NormalizePathString(assetName);
+					Load<T>(assetName);
+				}
+
 
 				// if we have a callback do it on the main thread
 				if (onLoaded != null)
@@ -397,6 +412,7 @@ namespace Nez.Systems
 		/// <typeparam name="T">The 1st type parameter.</typeparam>
 		public void UnloadAsset<T>(string assetName) where T : class, IDisposable
 		{
+			assetName = NormalizePathString(assetName);
 			if (IsAssetLoaded(assetName))
 			{
 				try
@@ -450,7 +466,7 @@ namespace Nez.Systems
 		/// </summary>
 		/// <returns><c>true</c> if this instance is asset loaded the specified assetName; otherwise, <c>false</c>.</returns>
 		/// <param name="assetName">Asset name.</param>
-		public bool IsAssetLoaded(string assetName) => LoadedAssets.ContainsKey(assetName);
+		public bool IsAssetLoaded(string assetName) => LoadedAssets.ContainsKey(NormalizePathString(assetName));
 
 		/// <summary>
 		/// provides a string suitable for logging with all the currently loaded assets and effects
@@ -480,7 +496,7 @@ namespace Nez.Systems
 				foreach (var kv in LoadedAssets)
 				{
 					if (kv.Value == asset)
-						return kv.Key;
+						return NormalizePathString(kv.Key);
 				}
 			}
 
@@ -498,6 +514,16 @@ namespace Nez.Systems
 				_loadedEffects[key].Dispose();
 
 			_loadedEffects.Clear();
+		}
+
+		private string NormalizePathString(string path = null) {
+			if (string.IsNullOrEmpty(path)) return string.Empty;
+			path = path.Replace('\\', '/');
+			if (!Path.IsPathRooted(path) && !path.StartsWith(RootDirectory))
+			{
+				path = $"{RootDirectory}/{path}";
+			}
+			return path;
 		}
 	}
 
