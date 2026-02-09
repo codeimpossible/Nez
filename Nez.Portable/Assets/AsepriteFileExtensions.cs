@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using AsepriteDotNet.Aseprite;
 using AsepriteDotNet.Aseprite.Types;
 using AsepriteDotNet.Common;
@@ -270,10 +271,41 @@ public static class AsepriteFileExtensions
 			for (int spriteIndex = 0, lookupIndex = tag.From; spriteIndex < sprites.Length; spriteIndex++, lookupIndex++)
 			{
 				sprites[spriteIndex] = atlas.Sprites[lookupIndex];
-				durations[spriteIndex] = 1.0f / (file.Frames[lookupIndex].Duration.Milliseconds / 1000.0f);
+				durations[spriteIndex] = (float)file.Frames[lookupIndex].Duration.TotalMilliseconds;
 			}
 
-			atlas.SpriteAnimations[tagNum] = new SpriteAnimation(sprites, durations);
+			var loopMode = SpriteAnimator.LoopMode.Loop;
+			if (tag.LoopDirection == AsepriteLoopDirection.Reverse)
+			{
+				sprites.Reverse();
+				durations.Reverse();
+			}
+
+			if (tag.LoopDirection == AsepriteLoopDirection.PingPong)
+			{
+				var pingPongSprites = new List<Sprite>();
+				var pingPongDurations = new List<float>();
+				for (var i = 0; i < sprites.Length; i++)
+				{
+					pingPongSprites.Add(sprites[i]);
+					pingPongDurations.Add(durations[i]);
+				}
+				for (var i = sprites.Length - 1; i >= 0; i--)
+				{
+					pingPongSprites.Add(sprites[i]);
+					pingPongDurations.Add(durations[i]);
+				}
+
+				sprites = pingPongSprites.ToArray();
+				durations = pingPongDurations.ToArray();
+			}
+
+			if (tag.Repeat == 0)
+			{
+				loopMode = SpriteAnimator.LoopMode.ClampForever;
+			}
+
+			atlas.SpriteAnimations[tagNum] = new SpriteAnimation(sprites, durations, loopMode, SpriteAnimationTimingMethod.FrameTimeMilliseconds);
 			atlas.AnimationNames[tagNum] = tag.Name;
 		}
 
@@ -355,16 +387,22 @@ public static class AsepriteFileExtensions
 			var tag = file.Tags[tagNum];
 			var sprites = new Sprite[tag.To - tag.From + 1];
 			var durations = new float[sprites.Length];
+			var loopMode = SpriteAnimator.LoopMode.Loop;
 
 			for (int spriteIndex = 0, lookupIndex = tag.From;
 				 spriteIndex < sprites.Length;
 				 spriteIndex++, lookupIndex++)
 			{
 				sprites[spriteIndex] = atlas.Sprites[lookupIndex];
-				durations[spriteIndex] = 1.0f / (file.Frames[lookupIndex].Duration.Milliseconds / 1000.0f);
+				durations[spriteIndex] = (float)file.Frames[lookupIndex].Duration.TotalMilliseconds;
 			}
 
-			atlas.SpriteAnimations[tagNum] = new SpriteAnimation(sprites, durations);
+			if (tag.Repeat == 0)
+			{
+				loopMode = SpriteAnimator.LoopMode.ClampForever;
+			}
+
+			atlas.SpriteAnimations[tagNum] = new SpriteAnimation(sprites, durations, loopMode, SpriteAnimationTimingMethod.FrameTimeMilliseconds);
 			atlas.AnimationNames[tagNum] = tag.Name;
 		}
 

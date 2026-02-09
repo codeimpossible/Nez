@@ -218,9 +218,9 @@ namespace Nez.Sprites
 		public bool IsRunning => AnimationState == State.Running;
 
 		/// <summary>
-		/// plays the animation with the given name. If no loopMode is specified it is defaults to Loop
+		/// plays the animation with the given name. The animation loop mode can be overridden.
 		/// </summary>
-		public void Play(string name, LoopMode loopMode = LoopMode.Loop)
+		public void Play(string name, LoopMode? loopMode = null)
 		{
 			CurrentAnimation = Animations[name];
 			CurrentAnimationName = name;
@@ -228,7 +228,7 @@ namespace Nez.Sprites
 			
 			SetFrame(0);
 
-			CurrentLoopMode = loopMode;
+			CurrentLoopMode = loopMode ?? CurrentAnimation.LoopMode;
 			AnimationState = State.Running;
 		}
 		
@@ -262,7 +262,14 @@ namespace Nez.Sprites
 		{
 			CurrentFrame = frameIndex;
 			Sprite = CurrentAnimation.Sprites[frameIndex];
-			FrameTimeLeft = ConvertFrameRateToSeconds(CurrentAnimation.FrameRates[frameIndex]);
+			if (CurrentAnimation.Timing == SpriteAnimationTimingMethod.FrameTimeMilliseconds)
+			{
+				FrameTimeLeft = CurrentAnimation.FrameRates[frameIndex] / 1000f;
+			}
+			else
+			{
+				FrameTimeLeft = ConvertFrameRateToSeconds(CurrentAnimation.FrameRates[frameIndex]);
+			}
 		}
 
 		/// <summary>
