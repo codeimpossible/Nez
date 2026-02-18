@@ -113,6 +113,9 @@ namespace Nez.ImGuiTools
 			foreach (var font in options._fonts)
 				io.Fonts.AddFontFromFileTTF(font.Item1, font.Item2);
 
+			foreach (var builder in options._fontBuilders)
+				builder.BuildFonts();
+
 			io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bytesPerPixel);
 
 			// Copy the data to a managed array

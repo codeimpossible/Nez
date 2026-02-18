@@ -13,7 +13,13 @@ namespace Nez.ImGuiTools
 		internal string _gameWindowTitle = "Game Window";
 		internal Num.Vector2 _gameWindowFirstPosition = new Num.Vector2(345f, 25f);
 		internal ImGuiWindowFlags _gameWindowFlags = 0;
+		internal List<IImGuiFontBuilder> _fontBuilders = new();
 
+		public ImGuiOptions AddFontBuilder(IImGuiFontBuilder builder)
+		{
+			_fontBuilders.Add(builder);
+			return this;
+		}
 
 		public ImGuiOptions AddFont(string path, float size)
 		{
