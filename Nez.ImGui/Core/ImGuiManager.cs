@@ -46,11 +46,14 @@ namespace Nez.ImGuiTools
 		Num.Vector2? _gameViewForcedSize;
 		WindowPosition? _gameViewForcedPos;
 		float _mainMenuBarHeight;
+		private readonly Action<Type> _sceneLoadAction;
 
 		public ImGuiManager(ImGuiOptions options = null)
 		{
 			if (options == null)
 				options = new ImGuiOptions();
+
+			_sceneLoadAction = options._customSceneLoader ?? LoadScene;
 
 			_gameWindowFirstPosition = options._gameWindowFirstPosition;
 			_gameWindowTitle = options._gameWindowTitle;
@@ -74,6 +77,12 @@ namespace Nez.ImGuiTools
 			// find all themes
 			_themes = typeof(NezImGuiThemes).GetMethods(System.Reflection.BindingFlags.Static |
 			                                            System.Reflection.BindingFlags.Public);
+		}
+
+		void LoadScene(Type sceneType)
+		{
+			var scene = (Scene) Activator.CreateInstance(sceneType);
+			Core.StartSceneTransition(new FadeTransition(() => scene));
 		}
 
 		/// <summary>
@@ -135,8 +144,7 @@ namespace Nez.ImGuiTools
 					{
 						if (ImGui.MenuItem(sceneType.Name))
 						{
-							var scene = (Scene) Activator.CreateInstance(sceneType);
-							Core.StartSceneTransition(new FadeTransition(() => scene));
+							_sceneLoadAction(sceneType);
 						}
 					}
 

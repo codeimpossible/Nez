@@ -14,6 +14,13 @@ namespace Nez.ImGuiTools
 		internal Num.Vector2 _gameWindowFirstPosition = new Num.Vector2(345f, 25f);
 		internal ImGuiWindowFlags _gameWindowFlags = 0;
 		internal List<IImGuiFontBuilder> _fontBuilders = new();
+		internal Action<Type>? _customSceneLoader = null;
+
+		public ImGuiOptions AddCustomSceneLoader(Action<Type> loader)
+		{
+			_customSceneLoader = loader;
+			return this;
+		}
 
 		public ImGuiOptions AddFontBuilder(IImGuiFontBuilder builder)
 		{
