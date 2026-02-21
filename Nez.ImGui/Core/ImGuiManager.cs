@@ -48,6 +48,8 @@ namespace Nez.ImGuiTools
 		float _mainMenuBarHeight;
 		private readonly Action<Type> _sceneLoadAction;
 
+		private readonly bool _desiredMouseVisibility = false;
+
 		public ImGuiManager(ImGuiOptions options = null)
 		{
 			if (options == null)
@@ -58,6 +60,8 @@ namespace Nez.ImGuiTools
 			_gameWindowFirstPosition = options._gameWindowFirstPosition;
 			_gameWindowTitle = options._gameWindowTitle;
 			_gameWindowFlags = options._gameWindowFlags;
+
+			_desiredMouseVisibility = Core.Instance.IsMouseVisible;
 
 			LoadSettings();
 			_renderer = new ImGuiRenderer(Core.Instance);

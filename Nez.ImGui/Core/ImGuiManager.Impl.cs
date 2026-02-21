@@ -125,6 +125,21 @@ namespace Nez.ImGuiTools
 			// convert mouse input to the game windows coordinates
 			OverrideMouseInput();
 
+			if (!ImGui.IsWindowHovered())
+			{
+				if (!_desiredMouseVisibility)
+				{
+					// author wants the native cursor hidden within the game window
+					// but we need it visible within the editor
+					Core.Instance.IsMouseVisible = true;
+				}
+			}
+			else
+			{
+				if (Core.Instance.IsMouseVisible != _desiredMouseVisibility)
+					Core.Instance.IsMouseVisible = _desiredMouseVisibility;
+			}
+
 			if (!ImGui.IsWindowFocused())
 			{
 				bool focusedWindow = false;
