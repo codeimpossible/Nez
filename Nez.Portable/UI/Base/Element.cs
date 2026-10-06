@@ -173,7 +173,7 @@ namespace Nez.UI
 		}
 
 		/// <summary>
-		/// Sets the position of the element's bottom left corner
+		/// Sets the position of the element's top left corner
 		/// </summary>
 		/// <param name="x">The x coordinate.</param>
 		/// <param name="y">The y coordinate.</param>

@@ -7,7 +7,7 @@ namespace Nez.UI
 	public class Button : Table, IInputListener, IGamepadFocusable
 	{
 		public event Action<bool> OnChanged;
-		public event Action<Button> OnClicked, OnRightClicked;
+		public event Action<Button> OnClicked, OnRightClicked, OnFocusChanged;
 
 		public override float PreferredWidth
 		{
@@ -48,6 +48,8 @@ namespace Nez.UI
 			get => _isChecked;
 			set => SetChecked(value, ProgrammaticChangeEvents);
 		}
+
+		public bool IsFocused => _mouseOver;
 
 		public bool ProgrammaticChangeEvents;
 
@@ -95,13 +97,13 @@ namespace Nez.UI
 
 		void IInputListener.OnMouseEnter()
 		{
-			_mouseOver = true;
+			OnFocused();
 		}
 
 
 		void IInputListener.OnMouseExit()
 		{
-			_mouseOver = _mouseDown = false;
+			OnUnfocused();
 		}
 
 
@@ -129,7 +131,7 @@ namespace Nez.UI
 			// if we get too far outside the button cancel future events
 			if (DistanceOutsideBoundsToPoint(mousePos) > ButtonBoundaryThreshold)
 			{
-				_mouseDown = _mouseOver = false;
+				OnUnfocused();
 				GetStage().RemoveInputFocusListener(this);
 			}
 		}
@@ -219,12 +221,14 @@ namespace Nez.UI
 		protected virtual void OnFocused()
 		{
 			_mouseOver = true;
+			OnFocusChanged?.Invoke(this);
 		}
 
 
 		protected virtual void OnUnfocused()
 		{
 			_mouseOver = _mouseDown = false;
+			OnFocusChanged?.Invoke(this);
 		}
 
 
